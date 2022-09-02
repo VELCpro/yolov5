@@ -203,9 +203,9 @@ class LoadImages:
 
         images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
-        
+
         ni, nv = len(images), len(videos)
-        
+
         self.img_size = img_size
         self.stride = stride
         self.files = images + videos
@@ -237,7 +237,8 @@ class LoadImages:
             # Read video
             self.mode = 'video'
             ret_val, im0 = self.cap.read()
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.skip_frame*(self.frame+1)) # read_frame/inference every self.skip_frame frames
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES,
+                         self.skip_frame * (self.frame + 1))  # read_frame/inference every self.skip_frame frames
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -275,14 +276,14 @@ class LoadImages:
         print(self.video_fps)
         if self.inf_rate == 0:
             self.inf_rate = self.video_fps
-            self.skip_frame = self.video_fps/self.inf_rate
+            self.skip_frame = self.video_fps / self.inf_rate
         else:
             if self.fr_unit == 'fps':
                 self.skip_frame = self.video_fps / self.inf_rate
             elif self.fr_unit == 'fpm':
                 self.skip_frame = self.video_fps * 60 / self.inf_rate  # fps to fpm   coefficient: 60
             elif self.fr_unit == 'fph':
-                self.skip_frame = self.video_fps * 60 * 60 / self.inf_rate  # fps to fph   coefficient: 3600      
+                self.skip_frame = self.video_fps * 60 * 60 / self.inf_rate  # fps to fph   coefficient: 3600
         self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) / self.skip_frame)
         self.orientation = int(self.cap.get(cv2.CAP_PROP_ORIENTATION_META))  # rotation degrees
         # self.cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 0)  # disable https://github.com/ultralytics/yolov5/issues/8493

@@ -41,8 +41,9 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, VID_FRAME_RATE_UNITS, LoadImages, LoadStreams
-from utils.general import (LOGGER, Profile, check_file, check_fps, check_img_size, check_imshow, check_requirements, colorstr, cv2,
-                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
+from utils.general import (LOGGER, Profile, check_file, check_fps, check_img_size, check_imshow, check_requirements,
+                           colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords,
+                           strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 
@@ -75,9 +76,8 @@ def run(
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
-        inf_rate=0, # number of inference given a frame rate unit
-        fr_unit='fps' # frame rate unit
-
+        inf_rate=0,  # number of inference given a frame rate unit
+        fr_unit='fps'  # frame rate unit
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -87,7 +87,7 @@ def run(
     if is_url and is_file:
         source = check_file(source)  # download
     fr_unit = check_fps(fr_unit)
- 
+
     # Directories
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
