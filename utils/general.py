@@ -450,6 +450,10 @@ def check_file(file, suffix=''):
         assert len(files) == 1, f"Multiple files match '{file}', specify exact path: {files}"  # assert unique
         return files[0]  # return file
 
+def check_fps(fr_unit):
+    from utils.dataloaders import VID_FRAME_RATE_UNITS
+    assert fr_unit in VID_FRAME_RATE_UNITS, f'Frame rate unit not allowed {fr_unit}, units allowd are: {VID_FRAME_RATE_UNITS}'
+    return fr_unit
 
 def check_font(font=FONT, progress=False):
     # Download font to CONFIG_DIR if necessary

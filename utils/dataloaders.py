@@ -38,6 +38,7 @@ from utils.torch_utils import torch_distributed_zero_first
 HELP_URL = 'See https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 IMG_FORMATS = 'bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp', 'pfm'  # include image suffixes
 VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'  # include video suffixes
+VID_FRAME_RATE_UNITS = 'fps', 'fpm', 'fph'
 BAR_FORMAT = '{l_bar}{bar:10}{r_bar}{bar:-10b}'  # tqdm bar format
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 PIN_MEMORY = str(os.getenv('PIN_MEMORY', True)).lower() == 'true'  # global pin_memory for dataloaders
@@ -187,7 +188,7 @@ class _RepeatSampler:
 
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None):
+    def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None, inf_rate=0, fr_unit='fps'):
         files = []
         for p in sorted(path) if isinstance(path, (list, tuple)) else [path]:
             p = str(Path(p).resolve())
@@ -202,8 +203,9 @@ class LoadImages:
 
         images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
+        
         ni, nv = len(images), len(videos)
-
+        
         self.img_size = img_size
         self.stride = stride
         self.files = images + videos
@@ -212,6 +214,9 @@ class LoadImages:
         self.mode = 'image'
         self.auto = auto
         self.transforms = transforms  # optional
+        self.inf_rate = inf_rate
+        self.fr_unit = fr_unit
+
         if any(videos):
             self._new_video(videos[0])  # new video
         else:
@@ -232,6 +237,7 @@ class LoadImages:
             # Read video
             self.mode = 'video'
             ret_val, im0 = self.cap.read()
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.skip_frame*(self.frame+1)) # read_frame/inference every self.skip_frame frames
             while not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -265,7 +271,19 @@ class LoadImages:
         # Create a new video capture object
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
-        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.video_fps = self.cap.get(cv2.CAP_PROP_FPS)
+        print(self.video_fps)
+        if self.inf_rate == 0:
+            self.inf_rate = self.video_fps
+            self.skip_frame = self.video_fps/self.inf_rate
+        else:
+            if self.fr_unit == 'fps':
+                self.skip_frame = self.video_fps / self.inf_rate
+            elif self.fr_unit == 'fpm':
+                self.skip_frame = self.video_fps * 60 / self.inf_rate  # fps to fpm   coefficient: 60
+            elif self.fr_unit == 'fph':
+                self.skip_frame = self.video_fps * 60 * 60 / self.inf_rate  # fps to fph   coefficient: 3600      
+        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) / self.skip_frame)
         self.orientation = int(self.cap.get(cv2.CAP_PROP_ORIENTATION_META))  # rotation degrees
         # self.cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 0)  # disable https://github.com/ultralytics/yolov5/issues/8493
 
